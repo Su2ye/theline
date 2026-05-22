@@ -12,6 +12,11 @@ server/vapid.json
 server/subscriptions.json
 server/node_modules
 
+# Cloudflare Worker
+worker/node_modules
+worker/.dev.vars
+worker/.wrangler
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
