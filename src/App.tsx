@@ -136,7 +136,7 @@ export default function App() {
     if ('Notification' in window && Notification.permission === 'granted') {
       new Notification('又见面了', {
         body: '刚刚记录了一次见面',
-        icon: '/theline/icon-192.png',
+        icon: '/icon-192.png',
         tag: 'theline-meet',
       })
     }

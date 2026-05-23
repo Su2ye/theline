@@ -167,9 +167,9 @@ npm run build
 npm run preview
 ```
 
-### 部署
+### 地址
 
-纯静态文件，无后端。可直接部署到 Vercel、GitHub Pages、Cloudflare Pages 或任何静态托管服务。
+https://theline-pages.pages.dev
 
 ---
 
