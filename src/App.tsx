@@ -165,6 +165,13 @@ export default function App() {
   }, [])
 
   const handlePaired = useCallback(async () => {
+    // 从 IndexedDB 读取配对信息（由 webrtc.setupDataChannel 写入）
+    const info = await db.pairInfo.toArray()
+    if (info.length > 0) {
+      peerIdRef.current = info[0].peerId
+      setPairCreatedAt(info[0].pairCreatedAt)
+    }
+
     setPaired(true)
     setGpsActive(true)
     setPage('main')

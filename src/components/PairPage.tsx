@@ -58,9 +58,21 @@ export default function PairPage({ onPaired }: Props) {
       try {
         await copyToClipboard(answer)
       } catch { /* 剪贴板失败不影响 */ }
-      setTimeout(() => onPaired(), 1000)
     } catch {
       setError('配对码无效，请检查是否正确粘贴')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleWaitConnection = async () => {
+    setLoading(true)
+    setError('')
+    try {
+      await webrtc.waitForConnection()
+      onPaired()
+    } catch {
+      setError('连接超时，请确认对方已完成配对')
     } finally {
       setLoading(false)
     }
@@ -71,9 +83,10 @@ export default function PairPage({ onPaired }: Props) {
     setError('')
     try {
       await webrtc.completePairing(answerText)
+      await webrtc.waitForConnection()
       onPaired()
     } catch {
-      setError('回复码无效，请检查是否正确粘贴')
+      setError('配对失败，请检查回复码或重试')
     } finally {
       setLoading(false)
     }
@@ -139,11 +152,11 @@ export default function PairPage({ onPaired }: Props) {
           >
             {copied ? '已复制 ✓' : '重新复制'}
           </button>
-          <div className="text-white/20 text-xs mb-3">
-            等待对方完成配对后，粘贴对方的回复码：
-          </div>
+          <p className="text-white/30 text-xs mb-3">
+            对方完成配对后，把回复码粘贴到下面：
+          </p>
           <textarea
-            placeholder="在这里粘贴对方的回复…"
+            placeholder="在这里粘贴对方的回复码…"
             className="w-full bg-white/5 rounded-xl p-3 text-white/80 text-sm resize-none h-24 focus:outline-none focus:ring-1 focus:ring-white/20 placeholder-white/20"
             value={answerText}
             onChange={e => setAnswerText(e.target.value)}
@@ -155,6 +168,9 @@ export default function PairPage({ onPaired }: Props) {
             >
               完成配对
             </button>
+          )}
+          {loading && (
+            <p className="text-white/40 text-sm mt-3">正在建立连接…</p>
           )}
         </motion.div>
       )}
@@ -187,21 +203,30 @@ export default function PairPage({ onPaired }: Props) {
           >
             {loading ? '验证中…' : '接受配对'}
           </button>
-          {answerText && (
+          {answerText && !loading && (
             <motion.div className="mt-4" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
               <p className="text-white/50 text-sm mb-3">
-                回复码已生成并复制。发回给对方即可完成配对。
+                回复码已生成并复制。发回给对方，对方粘贴后会建立连接。
               </p>
               <div className="bg-white/5 rounded-xl p-4 mb-3 text-left max-h-32 overflow-y-auto">
                 <code className="text-xs text-white/60 break-all">{answerText}</code>
               </div>
               <button
                 onClick={() => copyToClipboard(answerText)}
-                className="w-full py-3 bg-white/10 rounded-xl text-sm hover:bg-white/15 transition-colors"
+                className="w-full py-3 bg-white/10 rounded-xl text-sm mb-3 hover:bg-white/15 transition-colors"
               >
                 {copied ? '已复制 ✓' : '重新复制'}
               </button>
+              <button
+                onClick={handleWaitConnection}
+                className="w-full py-4 bg-white text-black rounded-2xl font-semibold text-lg hover:bg-white/90 transition-colors active:scale-95"
+              >
+                等待对方完成配对
+              </button>
             </motion.div>
+          )}
+          {loading && (
+            <p className="text-white/40 text-sm mt-3">等待对方连接…</p>
           )}
         </motion.div>
       )}

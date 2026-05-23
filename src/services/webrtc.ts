@@ -149,6 +149,19 @@ class WebRTCService {
     }
   }
 
+  waitForConnection(): Promise<void> {
+    if (this.dc?.readyState === 'open') return Promise.resolve()
+    return new Promise((resolve, reject) => {
+      const timeout = setTimeout(() => {
+        cleanup()
+        reject(new Error('连接超时'))
+      }, 30000)
+      const cleanup = this.onConnectionChange((connected) => {
+        if (connected) { clearTimeout(timeout); cleanup(); resolve() }
+      })
+    })
+  }
+
   onMessage(handler: MessageHandler): () => void {
     this.handlers.push(handler)
     return () => { this.handlers = this.handlers.filter(h => h !== handler) }
