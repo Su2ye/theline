@@ -8,15 +8,14 @@ interface Props {
   pullOffset?: number
 }
 
-const THIRTY_DAYS = 30 * 24 * 60 * 60 * 1000
-
 export default function LineCanvas({ stats, pullOffset = 0 }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const rafRef = useRef<number>(0)
   const timeRef = useRef<number>(0)
   const statsRef = useRef(stats)
   const pullRef = useRef(pullOffset)
-  const sizeRef = useRef({ w: 0, h: 0 })
+  const sizeRef = useRef({ w: 0, h: 0, dpr: 1 })
+  const rectRef = useRef({ w: 0, h: 0 })
 
   statsRef.current = stats
   pullRef.current = pullOffset
@@ -28,15 +27,16 @@ export default function LineCanvas({ stats, pullOffset = 0 }: Props) {
     const ctx = canvas.getContext('2d')
     if (!ctx) return
 
-    function resizeCanvas() {
+    function updateSize() {
       const dpr = window.devicePixelRatio || 1
       const rect = canvas!.getBoundingClientRect()
-      const w = Math.round(rect.width * dpr)
-      const h = Math.round(rect.height * dpr)
-      if (sizeRef.current.w !== w || sizeRef.current.h !== h) {
-        sizeRef.current = { w, h }
-        canvas!.width = w
-        canvas!.height = h
+      rectRef.current = { w: rect.width, h: rect.height }
+      const pw = Math.round(rect.width * dpr)
+      const ph = Math.round(rect.height * dpr)
+      if (sizeRef.current.w !== pw || sizeRef.current.h !== ph) {
+        sizeRef.current = { w: pw, h: ph, dpr }
+        canvas!.width = pw
+        canvas!.height = ph
       }
     }
 
@@ -48,14 +48,11 @@ export default function LineCanvas({ stats, pullOffset = 0 }: Props) {
     }
 
     const draw = () => {
-      resizeCanvas()
-      const dpr = window.devicePixelRatio || 1
+      const { w, h, dpr } = sizeRef.current
+      const rw = rectRef.current.w
+      const rh = rectRef.current.h
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
-
-      const rect = canvas.getBoundingClientRect()
-      const w = rect.width
-      const h = rect.height
-      ctx.clearRect(0, 0, w, h)
+      ctx.clearRect(0, 0, rw, rh)
 
       const t = timeRef.current
       timeRef.current = t + 0.005
@@ -65,8 +62,7 @@ export default function LineCanvas({ stats, pullOffset = 0 }: Props) {
       const hue = getPairHue(s.pairStartDate)
       const { lineState, recentMeetDates } = s
 
-      const thirtyDaysAgo = Date.now() - THIRTY_DAYS
-      const recentMeets = recentMeetDates.filter(d => d > thirtyDaysAgo).length
+      const recentMeets = recentMeetDates.length
 
       let thickness = Math.min(1 + recentMeets * 1.5, 8)
       let alpha = 1
@@ -126,12 +122,12 @@ export default function LineCanvas({ stats, pullOffset = 0 }: Props) {
       rafRef.current = requestAnimationFrame(draw)
     }
 
-    resizeCanvas()
-    window.addEventListener('resize', resizeCanvas)
+    updateSize()
+    window.addEventListener('resize', updateSize)
     rafRef.current = requestAnimationFrame(draw)
 
     return () => {
-      window.removeEventListener('resize', resizeCanvas)
+      window.removeEventListener('resize', updateSize)
       cancelAnimationFrame(rafRef.current)
     }
   }, [])

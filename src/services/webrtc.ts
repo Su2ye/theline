@@ -50,23 +50,28 @@ class WebRTCService {
     }
   }
 
+  private get localSDP(): string {
+    return JSON.stringify(this.pc!.localDescription!.toJSON())
+  }
+
+  private waitForICE(): Promise<void> {
+    return new Promise<void>(resolve => {
+      this.pc!.onicegatheringstatechange = () => {
+        if (this.pc!.iceGatheringState === 'complete') resolve()
+      }
+      setTimeout(resolve, 5000)
+    })
+  }
+
   async createOffer(): Promise<string> {
     this.peerId = this.generatePeerId()
     this.initPC(true)
 
     const offer = await this.pc!.createOffer()
     await this.pc!.setLocalDescription(offer)
+    await this.waitForICE()
 
-    // Wait for ICE gathering to complete
-    await new Promise<void>(resolve => {
-      this.pc!.onicegatheringstatechange = () => {
-        if (this.pc!.iceGatheringState === 'complete') resolve()
-      }
-      // Timeout after 5 seconds
-      setTimeout(resolve, 5000)
-    })
-
-    return this.encodeSignal('offer', JSON.stringify(this.pc!.localDescription!.toJSON()))
+    return this.encodeSignal('offer', this.localSDP)
   }
 
   async acceptOffer(signalText: string): Promise<string> {
@@ -82,15 +87,9 @@ class WebRTCService {
 
     const answer = await this.pc!.createAnswer()
     await this.pc!.setLocalDescription(answer)
+    await this.waitForICE()
 
-    await new Promise<void>(resolve => {
-      this.pc!.onicegatheringstatechange = () => {
-        if (this.pc!.iceGatheringState === 'complete') resolve()
-      }
-      setTimeout(resolve, 5000)
-    })
-
-    return this.encodeSignal('answer', JSON.stringify(this.pc!.localDescription!.toJSON()))
+    return this.encodeSignal('answer', this.localSDP)
   }
 
   async completePairing(signalText: string): Promise<void> {

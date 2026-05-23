@@ -14,15 +14,14 @@ const cardColors = [
 export default function StatsCards({ stats }: Props) {
 
   const items = [
-    { label: '在一起', value: stats.totalDays, unit: '天', hint: '' },
+    { label: '在一起', value: stats.totalDays, unit: '天' },
     {
       label: '上次见面',
       value: stats.daysSinceLastMeet === null ? '--' : stats.daysSinceLastMeet === 0 ? '今天' : stats.daysSinceLastMeet,
       unit: stats.daysSinceLastMeet ? '天前' : '',
-      hint: '',
     },
-    { label: '见面次数', value: stats.meetCount, unit: '次', hint: '' },
-    { label: '去过的地方', value: stats.placesCount, unit: '个', hint: '' },
+    { label: '见面次数', value: stats.meetCount, unit: '次' },
+    { label: '去过的地方', value: stats.placesCount, unit: '个' },
   ]
 
   return (

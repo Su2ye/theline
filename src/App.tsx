@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback, useEffect, lazy, Suspense } from 'react'
+import { useState, useMemo, useCallback, useEffect, useRef, lazy, Suspense } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import LineCanvas from './components/LineCanvas'
 import StatsCards from './components/StatsCards'
@@ -15,23 +15,17 @@ import { subscribeToPush, nudgePeer } from './services/notify'
 const MeetMap = lazy(() => import('./components/MeetMap'))
 const MeetDetail = lazy(() => import('./components/MeetDetail'))
 
-function computeStats(markers: MeetMarker[], pairCreatedAt?: number): LineStats {
-  const sorted = [...markers].sort((a, b) => b.createdAt - a.createdAt)
-  const now = Date.now()
-  const recentDates = sorted.filter(m => m.createdAt > now - 30 * 24 * 60 * 60 * 1000).map(m => m.createdAt)
-  const lastMeet = sorted[0]?.createdAt ?? null
-  const uniquePlaces = new Set(sorted.map(m => `${m.lat.toFixed(4)},${m.lng.toFixed(4)}`))
+function getDayDiff(ts: number | null): number | null {
+  if (!ts) return null
+  return Math.ceil((Date.now() - ts) / (1000 * 60 * 60 * 24))
+}
 
-  return {
-    pairStartDate: pairCreatedAt ?? sorted[sorted.length - 1]?.createdAt ?? now,
-    totalDays: pairCreatedAt ? Math.ceil((now - pairCreatedAt) / (1000 * 60 * 60 * 24)) : 0,
-    lastMeetDate: lastMeet,
-    daysSinceLastMeet: lastMeet ? Math.ceil((now - lastMeet) / (1000 * 60 * 60 * 24)) : null,
-    meetCount: markers.length,
-    placesCount: uniquePlaces.size,
-    recentMeetDates: recentDates,
-    lineState: 'normal',
-  }
+function deriveLineState(days: number | null): LineState {
+  if (days === null) return 'normal'
+  if (days > 60) return 'disconnected'
+  if (days > 30) return 'critical'
+  if (days > 14) return 'warning'
+  return 'normal'
 }
 
 type Page = 'main' | 'pair'
@@ -48,6 +42,7 @@ export default function App() {
   const [gpsActive, setGpsActive] = useState(false)
   const [connected, setConnected] = useState(false)
   const [nudgeResult, setNudgeResult] = useState<'idle' | 'sending' | 'sent'>('idle')
+  const peerIdRef = useRef('')
 
   const wakeLock = useWakeLock()
 
@@ -66,9 +61,11 @@ export default function App() {
   useEffect(() => {
     db.pairInfo.toArray().then(info => {
       if (info.length > 0) {
+        const p = info[0]
         setPaired(true)
-        setPairCreatedAt(info[0].pairCreatedAt)
+        setPairCreatedAt(p.pairCreatedAt)
         setGpsActive(true)
+        peerIdRef.current = p.peerId
       }
     })
     db.markers.toArray().then(saved => {
@@ -92,14 +89,28 @@ export default function App() {
     }
   }, [paired, gpsActive, wakeLock])
 
-  // 计算统计数据（未配对时全部归零）
-  const stats = useMemo<LineStats>(() => {
+  const statsWithState = useMemo<LineStats>(() => {
     if (!paired) return {
       pairStartDate: Date.now(), totalDays: 0, lastMeetDate: null,
       daysSinceLastMeet: null, meetCount: 0, placesCount: 0,
       recentMeetDates: [], lineState: 'normal',
     }
-    return computeStats(markers, pairCreatedAt)
+    const sorted = [...markers].sort((a, b) => b.createdAt - a.createdAt)
+    const now = Date.now()
+    const recentDates = sorted.filter(m => m.createdAt > now - 30 * 24 * 60 * 60 * 1000).map(m => m.createdAt)
+    const lastMeet = sorted[0]?.createdAt ?? null
+    const daysSince = getDayDiff(lastMeet)
+    const uniquePlaces = new Set(sorted.map(m => `${m.lat.toFixed(4)},${m.lng.toFixed(4)}`))
+    return {
+      pairStartDate: pairCreatedAt ?? sorted[sorted.length - 1]?.createdAt ?? now,
+      totalDays: pairCreatedAt ? getDayDiff(pairCreatedAt) ?? 0 : 0,
+      lastMeetDate: lastMeet,
+      daysSinceLastMeet: daysSince,
+      meetCount: markers.length,
+      placesCount: uniquePlaces.size,
+      recentMeetDates: recentDates,
+      lineState: deriveLineState(daysSince),
+    }
   }, [paired, markers, pairCreatedAt])
 
   // 见面检测回调
@@ -139,11 +150,7 @@ export default function App() {
     setGpsActive(true)
     setPage('main')
 
-    // 配对成功后订阅推送通知
-    const info = await db.pairInfo.toArray()
-    if (info.length > 0) {
-      subscribeToPush(info[0].peerId)
-    }
+    subscribeToPush(peerIdRef.current)
   }, [])
 
   const updateMarker = useCallback((field: 'myNote' | 'myPhoto', value: string) => {
@@ -173,17 +180,6 @@ export default function App() {
     setPullStartY(null)
   }, [pullOffset])
 
-  // 线段状态
-  const lineState = useMemo<LineState>(() => {
-    if (stats.daysSinceLastMeet === null) return 'normal'
-    if (stats.daysSinceLastMeet > 60) return 'disconnected'
-    if (stats.daysSinceLastMeet > 30) return 'critical'
-    if (stats.daysSinceLastMeet > 14) return 'warning'
-    return 'normal'
-  }, [stats.daysSinceLastMeet])
-
-  const statsWithState = useMemo<LineStats>(() => ({ ...stats, lineState }), [stats, lineState])
-
   return (
     <div
       className="h-full w-full relative bg-[#0f0f0f] overflow-hidden"
@@ -198,13 +194,8 @@ export default function App() {
           <button
             onClick={async () => {
               setNudgeResult('sending')
-              const info = await db.pairInfo.toArray()
-              if (info.length > 0) {
-                const ok = await nudgePeer(info[0].peerId)
-                setNudgeResult(ok ? 'sent' : 'idle')
-              } else {
-                setNudgeResult('idle')
-              }
+              const ok = await nudgePeer(peerIdRef.current)
+              setNudgeResult(ok ? 'sent' : 'idle')
               setTimeout(() => setNudgeResult('idle'), 3000)
             }}
             disabled={nudgeResult === 'sending'}

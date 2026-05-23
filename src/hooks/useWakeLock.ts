@@ -1,4 +1,4 @@
-import { useRef, useCallback } from 'react'
+import { useRef, useCallback, useMemo } from 'react'
 
 export function useWakeLock() {
   const wakeLockRef = useRef<WakeLockSentinel | null>(null)
@@ -10,9 +10,7 @@ export function useWakeLock() {
       wakeLockRef.current.addEventListener('release', () => {
         wakeLockRef.current = null
       })
-    } catch {
-      // 用户拒绝或系统不支持
-    }
+    } catch { /* 系统不支持或用户拒绝 */ }
   }, [])
 
   const release = useCallback(async () => {
@@ -22,5 +20,5 @@ export function useWakeLock() {
     }
   }, [])
 
-  return { request, release }
+  return useMemo(() => ({ request, release }), [request, release])
 }

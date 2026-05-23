@@ -1,6 +1,13 @@
 import { useState, useEffect } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
+import { motion } from 'framer-motion'
 import type { MeetMarker } from '../types'
+
+const CameraSvg = () => (
+  <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+    <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
+    <circle cx="12" cy="13" r="4" />
+  </svg>
+)
 
 interface Props {
   marker: MeetMarker | null
@@ -41,14 +48,13 @@ export default function MeetDetail({ marker, onClose, onSaveNote, onSavePhoto }:
   }
 
   return (
-    <AnimatePresence>
-      <motion.div
-        className="absolute inset-0 z-30 flex items-end justify-center bg-black/60 backdrop-blur-sm"
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        exit={{ opacity: 0 }}
-        onClick={onClose}
-      >
+    <motion.div
+      className="absolute inset-0 z-30 flex items-end justify-center bg-black/60 backdrop-blur-sm"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      onClick={onClose}
+    >
         <motion.div
           className="w-full max-h-[80vh] bg-[#1c1c1e] rounded-t-3xl p-6 overflow-y-auto"
           initial={{ y: '100%' }}
@@ -77,10 +83,7 @@ export default function MeetDetail({ marker, onClose, onSaveNote, onSavePhoto }:
                 />
               ) : (
                 <label className="w-full h-full flex flex-col items-center justify-center cursor-pointer gap-1 text-white/30 hover:text-white/50 transition-colors">
-                  <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-                    <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
-                    <circle cx="12" cy="13" r="4" />
-                  </svg>
+                  <CameraSvg />
                   <span className="text-xs">添加照片</span>
                   <input type="file" accept="image/*" capture="environment" className="hidden" onChange={handleFileChange} />
                 </label>
@@ -93,17 +96,10 @@ export default function MeetDetail({ marker, onClose, onSaveNote, onSavePhoto }:
             {/* 对方的照片 */}
             <div className="aspect-square bg-white/5 rounded-xl overflow-hidden relative">
               {marker.peerPhoto ? (
-                <img
-                  src={marker.peerPhoto}
-                  className={`w-full h-full object-cover ${!hasBothPhotos ? 'blur-2xl scale-110' : ''}`}
-                  alt="对方的照片"
-                />
+                <img src={marker.peerPhoto} className={`w-full h-full object-cover ${!hasBothPhotos ? 'blur-2xl scale-110' : ''}`} alt="对方的照片" />
               ) : (
                 <div className="w-full h-full flex flex-col items-center justify-center text-white/20 gap-1">
-                  <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-                    <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
-                    <circle cx="12" cy="13" r="4" />
-                  </svg>
+                  <CameraSvg />
                   <span className="text-xs">等待对方上传</span>
                 </div>
               )}
@@ -150,6 +146,5 @@ export default function MeetDetail({ marker, onClose, onSaveNote, onSavePhoto }:
           </button>
         </motion.div>
       </motion.div>
-    </AnimatePresence>
   )
 }
