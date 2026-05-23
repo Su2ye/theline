@@ -4,7 +4,10 @@ const STUN_SERVERS = {
   iceServers: [
     { urls: 'stun:stun.l.google.com:19302' },
     { urls: 'stun:stun1.l.google.com:19302' },
+    { urls: 'stun:stun.cloudflare.com:3478' },
+    { urls: 'stun:stun.nextcloud.com:3478' },
   ],
+  iceCandidatePoolSize: 2,
 }
 
 interface SignalMessage {
@@ -56,10 +59,13 @@ class WebRTCService {
 
   private waitForICE(): Promise<void> {
     return new Promise<void>(resolve => {
-      this.pc!.onicegatheringstatechange = () => {
-        if (this.pc!.iceGatheringState === 'complete') resolve()
+      const pc = this.pc!
+      if (pc.iceGatheringState === 'complete') { resolve(); return }
+      pc.onicegatheringstatechange = () => {
+        if (pc.iceGatheringState === 'complete') resolve()
       }
-      setTimeout(resolve, 5000)
+      // 超时 8 秒，确保大部分 candidate 已收集
+      setTimeout(resolve, 8000)
     })
   }
 
