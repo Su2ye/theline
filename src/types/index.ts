@@ -1,5 +1,6 @@
 export interface PairInfo {
   peerId: string
+  myPeerId: string
   webRTCCredentials: string | null
   lastConnectedAt: number | null
   pairCreatedAt: number

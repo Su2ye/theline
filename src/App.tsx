@@ -58,15 +58,23 @@ export default function App() {
     },
   })
 
-  // 启动时加载配对信息和标记
+  // 启动时加载配对 + 尝试重连
   useEffect(() => {
-    db.pairInfo.toArray().then(info => {
+    db.pairInfo.toArray().then(async info => {
       if (info.length > 0) {
         const p = info[0]
         setPaired(true)
         setPairCreatedAt(p.pairCreatedAt)
         setGpsActive(true)
         peerIdRef.current = p.peerId
+        webrtc.setPeerIds(p.myPeerId || '', p.peerId)
+
+        // 自动重连：谁先上线谁当 offerer
+        const ok = await webrtc.reconnectAsOfferer()
+        if (!ok) {
+          // 尝试作为 answerer
+          await webrtc.reconnectAsAnswerer()
+        }
       }
     })
     db.markers.toArray().then(saved => {
@@ -178,11 +186,12 @@ export default function App() {
   }, [wakeLock])
 
   const handlePaired = useCallback(async () => {
-    // 从 IndexedDB 读取配对信息（由 webrtc.setupDataChannel 写入）
     const info = await db.pairInfo.toArray()
     if (info.length > 0) {
-      peerIdRef.current = info[0].peerId
-      setPairCreatedAt(info[0].pairCreatedAt)
+      const p = info[0]
+      peerIdRef.current = p.peerId
+      setPairCreatedAt(p.pairCreatedAt)
+      webrtc.setPeerIds(p.myPeerId || '', p.peerId)
     }
 
     setPaired(true)

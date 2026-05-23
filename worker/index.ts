@@ -78,4 +78,29 @@ app.post('/api/unsubscribe', async (c) => {
   return c.json({ ok: true })
 })
 
+// ============================================================
+// 信令中继（自动重连用）
+// ============================================================
+
+// POST /api/signal — 发送信令消息给指定 peer
+app.post('/api/signal', async (c) => {
+  const { to, kind, sdp } = await c.req.json()
+  if (!to || !kind || !sdp) {
+    return c.json({ error: '缺少参数' }, 400)
+  }
+  const env = c.env as Env
+  await env.SUBSCRIPTIONS.put(`signal:${to}`, JSON.stringify({ kind, sdp }), { expirationTtl: 60 })
+  return c.json({ ok: true })
+})
+
+// GET /api/signal/:peerId — 拉取给自己的信令消息
+app.get('/api/signal/:peerId', async (c) => {
+  const peerId = c.req.param('peerId')
+  const env = c.env as Env
+  const raw = await env.SUBSCRIPTIONS.get(`signal:${peerId}`)
+  if (!raw) return c.json(null)
+  await env.SUBSCRIPTIONS.delete(`signal:${peerId}`)
+  return c.json(JSON.parse(raw))
+})
+
 export default app

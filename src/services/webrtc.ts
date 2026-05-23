@@ -173,6 +173,7 @@ class WebRTCService {
       const existing = await db.pairInfo.get(this.otherPeerId)
       await db.pairInfo.put({
         peerId: this.otherPeerId,
+        myPeerId: this.peerId,
         webRTCCredentials: JSON.stringify({
           localDesc: this.pc!.localDescription?.toJSON(),
           remoteDesc: this.pc!.remoteDescription?.toJSON(),
@@ -221,6 +222,82 @@ class WebRTCService {
   send(data: unknown) {
     if (this.dc?.readyState === 'open') {
       this.dc.send(JSON.stringify(data))
+    }
+  }
+
+  getPeerId(): string { return this.peerId }
+  getOtherPeerId(): string { return this.otherPeerId }
+  setPeerIds(me: string, other: string) { this.peerId = me; this.otherPeerId = other }
+
+  private get signalURL(): string {
+    const base = typeof window !== 'undefined' ? (import.meta as any)?.env?.VITE_PUSH_SERVER || '' : ''
+    return base
+  }
+
+  async sendSignal(to: string, kind: 'offer' | 'answer', sdp: string): Promise<void> {
+    if (!this.signalURL) throw new Error('信令服务器未配置')
+    await fetch(`${this.signalURL}/api/signal`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ to, kind, sdp }),
+    })
+  }
+
+  async pollSignal(forPeerId: string): Promise<{ kind: 'offer' | 'answer'; sdp: string } | null> {
+    if (!this.signalURL) return null
+    try {
+      const res = await fetch(`${this.signalURL}/api/signal/${forPeerId}`)
+      const data = await res.json()
+      return data
+    } catch {
+      return null
+    }
+  }
+
+  async reconnectAsOfferer(): Promise<boolean> {
+    if (!this.otherPeerId) return false
+    try {
+      this.peerId = this.generatePeerId()
+      this.initPC(true)
+      const offer = await this.pc!.createOffer()
+      await this.pc!.setLocalDescription(offer)
+      await this.waitForICE()
+      await this.sendSignal(this.otherPeerId, 'offer', this.localSDP)
+
+      // 轮询等 answer
+      for (let i = 0; i < 30; i++) {
+        const msg = await this.pollSignal(this.peerId)
+        if (msg?.kind === 'answer') {
+          const desc = new RTCSessionDescription(JSON.parse(msg.sdp))
+          await this.pc!.setRemoteDescription(desc)
+          return true
+        }
+        await new Promise(r => setTimeout(r, 2000))
+      }
+      return false
+    } catch {
+      return false
+    }
+  }
+
+  async reconnectAsAnswerer(): Promise<boolean> {
+    if (!this.otherPeerId) return false
+    try {
+      // 等待对方的 offer
+      const msg = await this.pollSignal(this.peerId)
+      if (!msg || msg.kind !== 'offer') return false
+
+      this.peerId = this.generatePeerId()
+      this.initPC(false)
+      const offerDesc = new RTCSessionDescription(JSON.parse(msg.sdp))
+      await this.pc!.setRemoteDescription(offerDesc)
+      const answer = await this.pc!.createAnswer()
+      await this.pc!.setLocalDescription(answer)
+      await this.waitForICE()
+      await this.sendSignal(this.otherPeerId, 'answer', this.localSDP)
+      return true
+    } catch {
+      return false
     }
   }
 
