@@ -23,6 +23,7 @@ jobs:
         with:
           node-version: 22
 
+      - run: npm config set registry https://registry.npmmirror.com
       - run: npm ci
       - run: npm run build
         env:
