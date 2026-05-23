@@ -5,4 +5,4 @@ compatibility_flags = ["nodejs_compat"]
 
 [[kv_namespaces]]
 binding = "SUBSCRIPTIONS"
-id = "theline-subscriptions"
+id = "d681228f540b4bd1abea1fe44b5cd344"

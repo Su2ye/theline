@@ -29,20 +29,19 @@ self.addEventListener('push', (event) => {
     event.waitUntil(
       self.registration.showNotification(payload.title || '这条线', {
         body: payload.body || '',
-        icon: payload.icon || '/icon-192.png',
-        badge: payload.badge || '/icon-192.png',
+        icon: '/theline/icon-192.png',
+        badge: '/theline/icon-192.png',
         tag: payload.tag || 'theline',
         requireInteraction: payload.requireInteraction ?? true,
         data: payload.data || {},
       })
     )
   } catch {
-    // 纯文本通知
     event.waitUntil(
       self.registration.showNotification('这条线', {
         body: event.data.text(),
-        icon: '/icon-192.png',
-        badge: '/icon-192.png',
+        icon: '/theline/icon-192.png',
+        badge: '/theline/icon-192.png',
         requireInteraction: true,
       })
     )
@@ -65,7 +64,7 @@ self.addEventListener('notificationclick', (event) => {
         return
       }
       // 否则打开新窗口
-      self.clients.openWindow(self.location.origin)
+      self.clients.openWindow(`${self.location.origin}/theline/`)
     })
   )
 })
