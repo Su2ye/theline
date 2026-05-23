@@ -185,6 +185,15 @@ export default function App() {
     wakeLock.release()
   }, [wakeLock])
 
+  const handleChangeDate = useCallback(async (date: number) => {
+    setPairCreatedAt(date)
+    await db.pairInfo.toArray().then(info => {
+      if (info.length > 0) {
+        db.pairInfo.update(info[0].peerId, { pairCreatedAt: date })
+      }
+    })
+  }, [])
+
   const handlePaired = useCallback(async () => {
     const info = await db.pairInfo.toArray()
     if (info.length > 0) {
@@ -315,7 +324,7 @@ export default function App() {
               </div>
             )}
 
-            <StatsCards stats={statsWithState} />
+            <StatsCards stats={statsWithState} paired={paired} onChangeDate={handleChangeDate} />
 
             {showMap && (
               <Suspense fallback={null}>
