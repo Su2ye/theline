@@ -42,6 +42,7 @@ export default function App() {
   const [gpsActive, setGpsActive] = useState(false)
   const [connected, setConnected] = useState(false)
   const [nudgeResult, setNudgeResult] = useState<'idle' | 'sending' | 'sent'>('idle')
+  const [meetFlash, setMeetFlash] = useState(0)
   const peerIdRef = useRef('')
 
   const wakeLock = useWakeLock()
@@ -80,10 +81,13 @@ export default function App() {
     })
   }, [])
 
-  // 已配对 + GPS 激活时，启用屏幕常亮
+  // 已配对 + GPS 激活时，启用屏幕常亮 + 请求通知权限
   useEffect(() => {
     if (paired && gpsActive) {
       wakeLock.request()
+      if ('Notification' in window && Notification.permission === 'default') {
+        Notification.requestPermission()
+      }
     } else {
       wakeLock.release()
     }
@@ -113,7 +117,7 @@ export default function App() {
     }
   }, [paired, markers, pairCreatedAt])
 
-  // 见面检测回调
+  // 见面检测回调：记录标记 + 闪亮动画 + 本地通知 + 震动
   const handleMeetDetected = useCallback((marker: MeetMarker) => {
     setMarkers(prev => {
       if (prev.find(m => m.id === marker.id)) return prev
@@ -121,6 +125,21 @@ export default function App() {
     })
     db.markers.put(marker)
     webrtc.send({ type: 'marker-sync', marker })
+
+    // 线段闪亮
+    setMeetFlash(Date.now())
+
+    // 震动反馈
+    if (navigator.vibrate) navigator.vibrate([100, 50, 100])
+
+    // 本地通知
+    if ('Notification' in window && Notification.permission === 'granted') {
+      new Notification('又见面了', {
+        body: '刚刚记录了一次见面',
+        icon: '/theline/icon-192.png',
+        tag: 'theline-meet',
+      })
+    }
   }, [])
 
   // GPS 追踪
@@ -242,7 +261,7 @@ export default function App() {
             exit={{ opacity: 0 }}
           >
             <div className="absolute top-0 left-0 right-0 h-[55%]">
-              <LineCanvas stats={statsWithState} pullOffset={pullOffset} />
+              <LineCanvas stats={statsWithState} pullOffset={pullOffset} meetFlash={meetFlash} />
             </div>
 
             {pullOffset > 0 && (

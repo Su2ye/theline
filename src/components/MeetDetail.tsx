@@ -40,9 +40,19 @@ export default function MeetDetail({ marker, onClose, onSaveNote, onSavePhoto }:
     if (!file) return
     const reader = new FileReader()
     reader.onload = () => {
-      const dataUrl = reader.result as string
-      setPhoto(dataUrl)
-      onSavePhoto(dataUrl)
+      const img = new Image()
+      img.onload = () => {
+        const maxW = 800
+        let { width: w, height: h } = img
+        if (w > maxW) { h = Math.round(h * maxW / w); w = maxW }
+        const canvas = document.createElement('canvas')
+        canvas.width = w; canvas.height = h
+        canvas.getContext('2d')!.drawImage(img, 0, 0, w, h)
+        const compressed = canvas.toDataURL('image/jpeg', 0.75)
+        setPhoto(compressed)
+        onSavePhoto(compressed)
+      }
+      img.src = reader.result as string
     }
     reader.readAsDataURL(file)
   }
