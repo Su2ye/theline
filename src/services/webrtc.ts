@@ -198,6 +198,9 @@ class WebRTCService {
     this.pc?.close()
     this.pc = null
     this.dc = null
+    this.peerId = ''
+    this.otherPeerId = ''
+    this.connHandlers.forEach(h => h(false))
   }
 }
 

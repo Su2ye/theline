@@ -164,6 +164,19 @@ export default function App() {
     })
   }, [])
 
+  const handleDisconnect = useCallback(async () => {
+    webrtc.disconnect()
+    await db.pairInfo.clear()
+    await db.markers.clear()
+    setPaired(false)
+    setGpsActive(false)
+    setConnected(false)
+    setPairCreatedAt(undefined)
+    setMarkers([])
+    peerIdRef.current = ''
+    wakeLock.release()
+  }, [wakeLock])
+
   const handlePaired = useCallback(async () => {
     // 从 IndexedDB 读取配对信息（由 webrtc.setupDataChannel 写入）
     const info = await db.pairInfo.toArray()
@@ -213,23 +226,33 @@ export default function App() {
       onTouchMove={handleTouchMove}
       onTouchEnd={handleTouchEnd}
     >
-      {/* 状态栏 + 提醒按钮 */}
+      {/* 状态栏 + 提醒 + 断开按钮 */}
       {page === 'main' && paired && (
         <>
           <StatusBar gpsActive={gpsActive} connected={connected} distance={distance} />
-          <button
-            onClick={async () => {
-              setNudgeResult('sending')
-              const ok = await nudgePeer(peerIdRef.current)
-              setNudgeResult(ok ? 'sent' : 'idle')
-              setTimeout(() => setNudgeResult('idle'), 3000)
-            }}
-            disabled={nudgeResult === 'sending'}
-            className="absolute z-20 bg-white/10 backdrop-blur-md rounded-full px-3 py-1.5 text-white/50 text-xs border border-white/10 hover:bg-white/15 hover:text-white/70 transition-colors disabled:opacity-30"
+          <div
+            className="absolute z-20 flex gap-2"
             style={{ top: `calc(56px + env(safe-area-inset-top, 0px))`, right: `calc(16px + env(safe-area-inset-right, 0px))` }}
           >
-            {nudgeResult === 'sending' ? '发送中…' : nudgeResult === 'sent' ? '已提醒' : '提醒对方'}
-          </button>
+            <button
+              onClick={async () => {
+                setNudgeResult('sending')
+                const ok = await nudgePeer(peerIdRef.current)
+                setNudgeResult(ok ? 'sent' : 'idle')
+                setTimeout(() => setNudgeResult('idle'), 3000)
+              }}
+              disabled={nudgeResult === 'sending'}
+              className="bg-white/10 backdrop-blur-md rounded-full px-3 py-1.5 text-white/50 text-xs border border-white/10 hover:bg-white/15 hover:text-white/70 transition-colors disabled:opacity-30"
+            >
+              {nudgeResult === 'sending' ? '发送中…' : nudgeResult === 'sent' ? '已提醒' : '提醒对方'}
+            </button>
+            <button
+              onClick={handleDisconnect}
+              className="bg-red-500/10 backdrop-blur-md rounded-full px-3 py-1.5 text-red-400/60 text-xs border border-red-500/15 hover:bg-red-500/20 hover:text-red-400 transition-colors"
+            >
+              断开
+            </button>
+          </div>
         </>
       )}
 
