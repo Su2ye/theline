@@ -27,7 +27,11 @@ export default function PairPage({ onPaired }: Props) {
       const offer = await webrtc.createOffer()
       setOfferText(offer)
       setMode('create')
-      await copyToClipboard(offer)
+      try {
+        await copyToClipboard(offer)
+      } catch {
+        // 剪贴板可能失败（非 HTTPS 或权限问题），但 offer 已生成，不算错误
+      }
     } catch {
       setError('生成配对码失败，请重试')
     } finally {
@@ -51,7 +55,9 @@ export default function PairPage({ onPaired }: Props) {
       const answer = await webrtc.acceptOffer(offerText)
       setAnswerText(answer)
       setMode('join')
-      await copyToClipboard(answer)
+      try {
+        await copyToClipboard(answer)
+      } catch { /* 剪贴板失败不影响 */ }
       setTimeout(() => onPaired(), 1000)
     } catch {
       setError('配对码无效，请检查是否正确粘贴')
