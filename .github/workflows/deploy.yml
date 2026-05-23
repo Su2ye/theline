@@ -1,0 +1,22 @@
+name: 部署到 Cloudflare Pages
+
+on:
+  push:
+    branches: [master]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm config set registry https://registry.npmmirror.com
+      - run: npm ci
+      - run: npm run build
+        env:
+          VITE_PUSH_SERVER: ${{ vars.VITE_PUSH_SERVER }}
+      - run: npx wrangler pages deploy dist --project-name theline-pages --branch master
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
