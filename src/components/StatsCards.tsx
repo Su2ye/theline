@@ -1,77 +1,58 @@
-import { motion } from 'framer-motion'
 import type { LineStats } from '../types'
 
 interface Props {
   stats: LineStats
 }
 
-function daysSinceText(stats: LineStats): string {
-  if (stats.daysSinceLastMeet === null) return '还没有见过面'
-  if (stats.daysSinceLastMeet === 0) return '今天见面了'
-  return `${stats.daysSinceLastMeet} 天前`
-}
-
-const card = {
-  initial: { opacity: 0, y: 20 },
-  animate: { opacity: 1, y: 0 },
-}
+const cardColors = [
+  { bg: 'from-amber-500/10 to-orange-500/5', border: 'border-amber-500/20', text: 'text-amber-200' },
+  { bg: 'from-rose-500/10 to-pink-500/5', border: 'border-rose-500/20', text: 'text-rose-200' },
+  { bg: 'from-violet-500/10 to-purple-500/5', border: 'border-violet-500/20', text: 'text-violet-200' },
+  { bg: 'from-emerald-500/10 to-teal-500/5', border: 'border-emerald-500/20', text: 'text-emerald-200' },
+]
 
 export default function StatsCards({ stats }: Props) {
+
+  const items = [
+    { label: '在一起', value: stats.totalDays, unit: '天', hint: '' },
+    {
+      label: '上次见面',
+      value: stats.daysSinceLastMeet === null ? '--' : stats.daysSinceLastMeet === 0 ? '今天' : stats.daysSinceLastMeet,
+      unit: stats.daysSinceLastMeet ? '天前' : '',
+      hint: '',
+    },
+    { label: '见面次数', value: stats.meetCount, unit: '次', hint: '' },
+    { label: '去过的地方', value: stats.placesCount, unit: '个', hint: '' },
+  ]
+
   return (
-    <div className="absolute bottom-0 left-0 right-0 z-10 px-5 pb-8 flex flex-col gap-3">
-      <motion.div
-        className="flex gap-3"
-        initial="initial"
-        animate="animate"
-        transition={{ staggerChildren: 0.08 }}
-      >
-        <motion.div
-          variants={card}
-          className="flex-1 bg-white/5 backdrop-blur-md rounded-2xl p-4 border border-white/8"
-        >
-          <div className="text-xs text-white/40 mb-1">在一起</div>
-          <div className="text-2xl font-semibold tracking-tight">
-            {stats.totalDays} <span className="text-sm text-white/50 font-normal">天</span>
-          </div>
-        </motion.div>
-
-        <motion.div
-          variants={card}
-          className="flex-1 bg-white/5 backdrop-blur-md rounded-2xl p-4 border border-white/8"
-        >
-          <div className="text-xs text-white/40 mb-1">上次见面</div>
-          <div className="text-xl font-semibold tracking-tight">
-            {daysSinceText(stats)}
-          </div>
-        </motion.div>
-      </motion.div>
-
-      <motion.div
-        className="flex gap-3"
-        initial="initial"
-        animate="animate"
-        transition={{ staggerChildren: 0.08, delayChildren: 0.1 }}
-      >
-        <motion.div
-          variants={card}
-          className="flex-1 bg-white/5 backdrop-blur-md rounded-2xl p-4 border border-white/8"
-        >
-          <div className="text-xs text-white/40 mb-1">见面次数</div>
-          <div className="text-2xl font-semibold tracking-tight">
-            {stats.meetCount} <span className="text-sm text-white/50 font-normal">次</span>
-          </div>
-        </motion.div>
-
-        <motion.div
-          variants={card}
-          className="flex-1 bg-white/5 backdrop-blur-md rounded-2xl p-4 border border-white/8"
-        >
-          <div className="text-xs text-white/40 mb-1">去过的地方</div>
-          <div className="text-2xl font-semibold tracking-tight">
-            {stats.placesCount} <span className="text-sm text-white/50 font-normal">个</span>
-          </div>
-        </motion.div>
-      </motion.div>
+    <div className="absolute bottom-0 left-0 right-0 px-4 pb-6 z-10">
+      <div className="flex gap-2.5">
+        {items.map((item, i) => {
+          const c = cardColors[i]
+          return (
+            <div
+              key={item.label}
+              className={`
+                flex-1 bg-gradient-to-b ${c.bg}
+                backdrop-blur-xl rounded-2xl px-3 py-4
+                border ${c.border}
+                flex flex-col items-center gap-1.5
+              `}
+            >
+              <div className="text-[10px] text-white/30 uppercase tracking-wider">
+                {item.label}
+              </div>
+              <div className={`text-xl font-bold tracking-tight tabular-nums ${c.text}`}>
+                {item.value}
+                {item.unit && (
+                  <span className="text-[11px] font-normal text-white/30 ml-0.5">{item.unit}</span>
+                )}
+              </div>
+            </div>
+          )
+        })}
+      </div>
     </div>
   )
 }
