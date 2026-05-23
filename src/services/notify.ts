@@ -53,16 +53,21 @@ export async function subscribeToPush(myPeerId: string): Promise<boolean> {
 export async function nudgePeer(peerId: string): Promise<boolean> {
   if (!SERVER) return false
 
+  const controller = new AbortController()
+  const timer = setTimeout(() => controller.abort(), 8000)
+
   try {
     const res = await fetch(`${SERVER}/api/notify`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ peerId }),
+      signal: controller.signal,
     })
     return res.ok
-  } catch (err) {
-    console.warn('推送发送失败:', err)
+  } catch {
     return false
+  } finally {
+    clearTimeout(timer)
   }
 }
 

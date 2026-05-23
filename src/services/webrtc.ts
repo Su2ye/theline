@@ -116,12 +116,32 @@ class WebRTCService {
     await this.pc!.setRemoteDescription(answerDesc)
   }
 
+  private keepAliveTimer: ReturnType<typeof setInterval> | null = null
+
   private initPC(isOfferer: boolean) {
     this.pc?.close()
+    if (this.keepAliveTimer) { clearInterval(this.keepAliveTimer); this.keepAliveTimer = null }
     this.pc = new RTCPeerConnection(PEER_CONFIG)
 
-    this.pc.onicecandidate = (e) => {
-      void e
+    this.pc.onicecandidate = (e) => { void e }
+
+    this.pc.oniceconnectionstatechange = () => {
+      const state = this.pc?.iceConnectionState
+      if (state === 'disconnected' || state === 'failed') {
+        this.connHandlers.forEach(h => h(false))
+      }
+    }
+
+    this.pc.onconnectionstatechange = () => {
+      const state = this.pc?.connectionState
+      if (state === 'connected') {
+        this.connHandlers.forEach(h => h(true))
+        this.startKeepAlive()
+      }
+      if (state === 'disconnected' || state === 'failed') {
+        this.connHandlers.forEach(h => h(false))
+        if (this.keepAliveTimer) { clearInterval(this.keepAliveTimer); this.keepAliveTimer = null }
+      }
     }
 
     this.pc.ondatachannel = (e) => {
@@ -133,6 +153,17 @@ class WebRTCService {
       this.dc = this.pc.createDataChannel('theline')
       this.setupDataChannel()
     }
+  }
+
+  private startKeepAlive() {
+    if (this.keepAliveTimer) return
+    this.keepAliveTimer = setInterval(() => {
+      if (this.dc?.readyState === 'open') {
+        this.dc.send(JSON.stringify({ type: 'ping' }))
+      } else {
+        if (this.keepAliveTimer) { clearInterval(this.keepAliveTimer); this.keepAliveTimer = null }
+      }
+    }, 15000)
   }
 
   private setupDataChannel() {
@@ -194,6 +225,7 @@ class WebRTCService {
   }
 
   disconnect() {
+    if (this.keepAliveTimer) { clearInterval(this.keepAliveTimer); this.keepAliveTimer = null }
     this.dc?.close()
     this.pc?.close()
     this.pc = null
