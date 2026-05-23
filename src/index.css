@@ -6,6 +6,10 @@
   --text: #e0e0e0;
   --text-muted: #888;
   --accent: #f0f0f0;
+  --sat: env(safe-area-inset-top, 0px);
+  --sar: env(safe-area-inset-right, 0px);
+  --sab: env(safe-area-inset-bottom, 0px);
+  --sal: env(safe-area-inset-left, 0px);
 }
 
 * {
@@ -26,6 +30,14 @@ html, body, #root {
   -webkit-user-select: none;
   touch-action: manipulation;
 }
+
+/* 安全区工具类 */
+.safe-top { padding-top: var(--sat); }
+.safe-bottom { padding-bottom: var(--sab); }
+.safe-left { padding-left: var(--sal); }
+.safe-right { padding-right: var(--sar); }
+.safe-top-m { margin-top: var(--sat); }
+.safe-bottom-m { margin-bottom: var(--sab); }
 
 body::before {
   content: '';

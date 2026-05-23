@@ -66,7 +66,7 @@ export default function MeetDetail({ marker, onClose, onSaveNote, onSavePhoto }:
       onClick={onClose}
     >
         <motion.div
-          className="w-full max-h-[80vh] bg-[#1c1c1e] rounded-t-3xl p-6 overflow-y-auto"
+          className="w-full max-h-[80vh] bg-[#1c1c1e] rounded-t-3xl p-6 overflow-y-auto safe-bottom" style={{ paddingBottom: `calc(24px + env(safe-area-inset-bottom, 0px))` }}
           initial={{ y: '100%' }}
           animate={{ y: 0 }}
           exit={{ y: '100%' }}

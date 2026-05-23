@@ -70,7 +70,7 @@ export default function MeetMap({ markers, visible, onClose, onMarkerClick }: Pr
 
   return (
     <div className="absolute inset-0 z-20 flex flex-col">
-      <div className="absolute top-0 left-0 right-0 z-30 flex justify-between items-center px-5 pt-4">
+      <div className="absolute top-0 left-0 right-0 z-30 flex justify-between items-center px-5 safe-top" style={{ paddingTop: `calc(16px + env(safe-area-inset-top, 0px))` }}>
         <span className="text-white/70 text-sm font-medium">我们去过的地方</span>
         <button
           onClick={onClose}

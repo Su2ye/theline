@@ -38,7 +38,7 @@ export default function StatusBar({ gpsActive, connected, distance }: Props) {
   }
 
   return (
-    <div className="absolute top-0 left-0 right-0 z-20 flex justify-center gap-2 pt-3 px-4">
+    <div className="absolute top-0 left-0 right-0 z-20 flex justify-center gap-2 px-4 safe-top" style={{ paddingTop: `calc(12px + env(safe-area-inset-top, 0px))` }}>
       <AnimatePresence>
         {items.map((item, i) => (
           <motion.div

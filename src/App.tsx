@@ -218,7 +218,8 @@ export default function App() {
               setTimeout(() => setNudgeResult('idle'), 3000)
             }}
             disabled={nudgeResult === 'sending'}
-            className="absolute top-14 right-4 z-20 bg-white/10 backdrop-blur-md rounded-full px-3 py-1.5 text-white/50 text-xs border border-white/10 hover:bg-white/15 hover:text-white/70 transition-colors disabled:opacity-30"
+            className="absolute z-20 bg-white/10 backdrop-blur-md rounded-full px-3 py-1.5 text-white/50 text-xs border border-white/10 hover:bg-white/15 hover:text-white/70 transition-colors disabled:opacity-30"
+            style={{ top: `calc(56px + env(safe-area-inset-top, 0px))`, right: `calc(16px + env(safe-area-inset-right, 0px))` }}
           >
             {nudgeResult === 'sending' ? '发送中…' : nudgeResult === 'sent' ? '已提醒' : '提醒对方'}
           </button>
@@ -229,7 +230,8 @@ export default function App() {
       {!paired && page === 'main' && (
         <button
           onClick={() => setPage('pair')}
-          className="absolute top-5 right-5 z-20 bg-white/10 backdrop-blur-md rounded-full px-4 py-2 text-white/70 text-sm border border-white/10 hover:bg-white/15 transition-colors"
+          className="absolute z-20 bg-white/10 backdrop-blur-md rounded-full px-4 py-2 text-white/70 text-sm border border-white/10 hover:bg-white/15 transition-colors"
+          style={{ top: `calc(20px + env(safe-area-inset-top, 0px))`, right: `calc(20px + env(safe-area-inset-right, 0px))` }}
         >
           配对
         </button>
@@ -247,7 +249,8 @@ export default function App() {
             <PairPage onPaired={handlePaired} />
             <button
               onClick={() => setPage('main')}
-              className="absolute bottom-8 left-1/2 -translate-x-1/2 text-white/30 text-sm hover:text-white/50 transition-colors"
+              className="absolute left-1/2 -translate-x-1/2 text-white/30 text-sm hover:text-white/50 transition-colors"
+              style={{ bottom: `calc(32px + env(safe-area-inset-bottom, 0px))` }}
             >
               返回主页
             </button>

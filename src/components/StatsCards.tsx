@@ -25,7 +25,7 @@ export default function StatsCards({ stats }: Props) {
   ]
 
   return (
-    <div className="absolute bottom-0 left-0 right-0 px-4 pb-6 z-10">
+    <div className="absolute bottom-0 left-0 right-0 px-4 z-10 safe-bottom" style={{ paddingBottom: `calc(24px + env(safe-area-inset-bottom, 0px))` }}>
       <div className="flex gap-2.5">
         {items.map((item, i) => {
           const c = cardColors[i]
